@@ -1,0 +1,46 @@
+# no secrets for you!
+config.txt
+femtoctf.service
+nginx_config.conf
+# no sockets
+app.sock
+static/downloads/
+logs/
+# bytecode
+__pycache__/
+mods/__pycache__/
+*.py[cod]
+*$py.class
+
+
+# Virtualenv
+.Python
+[Bb]in
+[Ii]nclude
+[Ll]ib
+[Ll]ib64
+[Ll]ocal
+[Ss]cripts
+pyvenv.cfg
+.venv
+pip-selfcheck.json
+venv/
+ENV/
+
+# Flask
+instance/
+.webassets-cache
+
+# installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# sublime remnants
+*.save
+*.save.*
+
+# vim remnants
+*.swp
+*.swp.*
+
+
