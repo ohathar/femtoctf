@@ -205,6 +205,7 @@ def get_challenges(challenge_id=None):
 		print(e)
 		return {'error': str(e)}
 
+
 @app.route('/challenge/<int:challenge_id>',methods=['GET','POST'])
 def challenge_route(challenge_id):
 	if not is_logged_in():
@@ -219,15 +220,14 @@ def challenge_route(challenge_id):
 		else:
 			flash('Great Success!','success')
 	user_solved = [x.get('challengeid') for x in get_user_solved(session.get('userid'))]
-	print(repr(user_solved))
 	solved_status = challenge_id in user_solved
-	print(repr(solved_status))
 	user_info = get_user_info(session.get('userid',0))
 	challenges = get_challenges()
 	challenge_info = get_challenges(challenge_id)
 	hl_path = get_hl_path(request.path)
+	site_data = get_site_data()
 	return render_template('challenge.html',logged_in=is_logged_in(),user_info=user_info,challenges=challenges,challenge_info=challenge_info,
-							hl_path=hl_path,solved_status=solved_status)
+							hl_path=hl_path,solved_status=solved_status,site_data=site_data)
 
 
 ### defunct route ###
@@ -302,8 +302,9 @@ def scores_route():
 	user_info = get_user_info(session.get('userid',0))
 	challenges = get_challenges()
 	hl_path = get_hl_path(request.path)
+	site_data = get_site_data()
 	return render_template('scores.html',logged_in=is_logged_in(),user_info=user_info,score_data=score_data, challenges=challenges,
-							hl_path=hl_path)
+							hl_path=hl_path,site_data=site_data)
 
 @app.route('/profile',methods=['GET','POST'])
 def profile_route():
@@ -316,7 +317,32 @@ def profile_route():
 	user_info = get_user_info(session.get('userid',0))
 	challenges = get_challenges()
 	hl_path = get_hl_path(request.path)
-	return render_template('profile.html',logged_in=is_logged_in(),user_info=user_info,challenges=challenges,hl_path=hl_path)
+	site_data = get_site_data()
+	return render_template('profile.html',logged_in=is_logged_in(),user_info=user_info,challenges=challenges,hl_path=hl_path,site_data=site_data)
+
+def get_site_rules():
+	cur = get_db().cursor()
+	cur.execute("SELECT setting_value AS site_rules FROM site_data WHERE setting_name = 'site_rules' LIMIT 1")
+	res = cur.fetchone()
+	rules = res.get('site_rules').split('\n')
+	return rules
+
+def get_site_data():
+	cur = get_db().cursor()
+	cur.execute("SELECT setting_value AS site_title FROM site_data WHERE setting_name = 'site_title' LIMIT 1")
+	res = cur.fetchone()
+	return res
+
+@app.route('/rules')
+def rules_route():
+	user_info = get_user_info(session.get('userid',0))
+	challenges = get_challenges()
+	hl_path = get_hl_path(request.path)
+	site_data = get_site_data()
+	site_rules = get_site_rules()
+	print(repr(site_rules))
+	return render_template('rules.html',logged_in=is_logged_in(),user_info=user_info, challenges=challenges,hl_path=hl_path,
+							site_data=site_data,site_rules=site_rules)
 
 @app.route('/',methods=['GET','POST'])
 def index_route():
@@ -334,7 +360,9 @@ def index_route():
 	user_info = get_user_info(session.get('userid',0))
 	challenges = get_challenges()
 	hl_path = get_hl_path(request.path)
-	return render_template('index.html',logged_in=is_logged_in(),user_info=user_info, challenges=challenges,hl_path=hl_path)
+	site_data = get_site_data()
+	return render_template('index.html',logged_in=is_logged_in(),user_info=user_info, challenges=challenges,hl_path=hl_path,
+							site_data=site_data)
 
 ### defunct route ###
 @app.route('/login', methods=['GET','POST'])
