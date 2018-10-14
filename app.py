@@ -21,7 +21,8 @@ app = Flask(__name__, static_url_path='')
 csrf = SeaSurf(app)
 
 DATABASE = './app.db'
-app.secret_key = binascii.hexlify(os.urandom(32))
+app.secret_key = '2ea67cc186f0da342bc81ffbdb3a1880' # un-hardcode me after dev
+#app.secret_key = binascii.hexlify(os.urandom(32))
 
 def dict_factory(cursor, row):
 	d = {}
@@ -76,7 +77,7 @@ def register(username, password):
 def login(username,password):
 	try:
 		cur = get_db().cursor()
-		cur.execute('SELECT id, username, password FROM users WHERE username = ? LIMIT 1', (username,))
+		cur.execute('SELECT id, username, email, password FROM users WHERE username = ? LIMIT 1', (username,))
 		res = cur.fetchone()
 		if res is None:
 			return False
@@ -84,6 +85,7 @@ def login(username,password):
 			return False
 		session['userid'] = res.get('id')
 		session['username'] = res.get('username')
+		session['email'] = res.get('email')
 		return True
 	except Exception as e:
 		print(e)
@@ -229,6 +231,37 @@ def get_user_info(userid):
 		return res
 	res['solved'] = get_user_solved(userid)
 	return res
+
+def update_user(form):
+	email = form.get('email',None) if form.get('email',None) != '' else None
+	password1 = form.get('password1',None) if form.get('password1',None) != '' else None
+	password2 = form.get('password2',None) if form.get('password2',None) != '' else None
+	print(repr(email),repr(password1),repr(password2))
+	if email is not None:
+		cur = get_db().cursor()
+		cur.execute('UPDATE users SET email = ? WHERE id = ? LIMIT 1',(email.strip(),session.get('userid')))
+		cur.connection.commit()
+	if all([password1,password2]):
+		if password1 == password2:
+			password_hash = bcrypt.encrypt(password1.strip(), rounds=8)
+			cur = get_db().cursor()
+			cur.execute('UPDATE users SET password = ? WHERE id = ? LIMIT 1', (password_hash,session.get('userid')))
+			cur.connection.commit()
+		else:
+			return {'status': False, 'message': 'Passwords did not match'}
+	return {'status': True, 'message': 'Profile updated'}
+
+
+@app.route('/profile',methods=['GET','POST'])
+def profile_route():
+	if request.method == 'POST':
+		status = update_user(request.form)
+		if not status.get('status'):
+			flash(status.get('message'), 'danger')
+		else:
+			flash(status.get('message'), 'success')
+	user_info = get_user_info(session.get('userid',0))
+	return render_template('profile.html',logged_in=is_logged_in(),user_info=user_info)
 
 @app.route('/',methods=['GET','POST'])
 def index_route():

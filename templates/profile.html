@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html>
+
+{% include 'header.html' %}
+
+<body>
+
+    <div class="wrapper">
+
+{% include 'sidebar.html' %}
+
+        <!-- Page Content Holder -->
+        <div id="content">
+
+{% include 'navbar.html' %}
+            
+            <h2>{{ user_info.get('username') }}'s Profile</h2>
+<p>
+
+<div class="container">
+<div class="form-group row">
+<form method="POST">
+  <div class="form-group">
+    <label for="exampleInputEmail1">Email address</label>
+    <input name="email" type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email" value="{% if user_info.get('email') %}{{ user_info.get('email') }}{% endif %}">
+  </div>
+  <div class="form-group">
+    <label for="exampleInputPassword1">Password</label>
+    <input name="password1" type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
+  </div>
+
+
+  <div class="form-group">
+    <label for="exampleInputPassword2">Password Verify</label>
+    <input name="password2" type="password" class="form-control" id="exampleInputPassword2" placeholder="Password">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  </div>
+
+  <button type="submit" class="btn btn-secondary">Submit</button>
+</form>
+</div>
+</div>
+
+</p>
+
+
+            <div class="line"></div>
+
+
+        </div>
+    </div>
+
+
+{% include 'footer.html' %}
+</body>
+
+</html>
