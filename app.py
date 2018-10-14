@@ -105,19 +105,9 @@ def get_user_solved(userid):
 		print(e)
 		return [{'fuck': 'shit'}]
 
-def get_challenges():
-	try:
-		cur = get_db().cursor()
-		cur.execute('SELECT id, name, description, points FROM challenges ORDER BY points, id ASC')
-		res = cur.fetchall()
-		return res if res is not None else {'fuck': 'shit'}
-	except Exception as e:
-		print(e)
-		return {'fuck': 'shit'}
-
 def is_legit_problem(problem_id):
 	challs = get_challenges()
-	if problem_id in [str(chall['id']) for chall in challs]:
+	if problem_id in [chall.get('id') for chall in challs]:
 		return True
 	return False
 
@@ -140,10 +130,7 @@ def award_solve(problem_id):
 		challs = get_challenges()
 		points = 0
 		now = int(time.time())
-		for chall in challs:
-			if str(chall.get('id')) == problem_id:
-				points = chall.get('points')
-				break
+		points = get_challenges(challenge_id=problem_id).get('points')
 		cmd = '''INSERT INTO scoreboard (userid, challengeid, points, occured) VALUES (?,?,?,?)'''
 		cur.execute(cmd, (userid,problem_id, points, now))
 		cmd = '''UPDATE users SET score = score + ? WHERE id = ? LIMIT 1'''
@@ -155,14 +142,14 @@ def award_solve(problem_id):
 		return False
 
 def grade_flag(problem_id,userid,send_flag):
-	if problem_id in [str(x.get('challengeid')) for x in get_user_solved(session.get('userid'))]:
+	if problem_id in [x.get('challengeid') for x in get_user_solved(session.get('userid'))]:
 		print('already solved')
 		return {'status': False, 'message': 'Already Solved'}
 	if not is_legit_problem(problem_id):
 		print('Non-existent problem')
 		return {'status': False, 'message': 'Non-existent Problem'}
 	flag_status = get_flag(problem_id)
-	if send_flag == flag_status.get('flag'):
+	if send_flag.strip() == flag_status.get('flag').strip():
 		print('looks good, award them...')
 		award_solve(problem_id)
 		return {'status': True}
@@ -181,21 +168,69 @@ def get_user_score(userid):
 		print(e)
 		return 0
 
-def get_scores():
+def get_hl_path(path):
+	if path == '/':
+		return 'home'
+	elif path == '/scores':
+		return 'scores'
+	elif path == '/rules':
+		return 'rules'
+	elif path.startswith('/challenge'):
+		return 'challenges'
+	else:
+		return 'home'
+
+def get_challenges(challenge_id=None):
 	try:
 		cur = get_db().cursor()
-		cur.execute('SELECT username, score FROM users ORDER BY score DESC')
-		return cur.fetchall()
+		if not challenge_id:
+			cur.execute('SELECT id, name, description, points FROM challenges ORDER BY points, id ASC')
+			res = cur.fetchall()
+			return res if res is not None else {'error': 'unknown challenge'}
+		else:
+			cur.execute('SELECT id, name, description, points, files FROM challenges WHERE id = ? LIMIT 1', (challenge_id,))
+			res = cur.fetchone()
+			if res is not None:
+				if res.get('files',None) is not None:
+					res['files'] = [x.strip() for x in res.get('files').split(',')]
+				cur.execute('SELECT count(id) AS the_count FROM scoreboard WHERE challengeid = ?', (challenge_id,))
+				solves = cur.fetchone()
+				if solves is not None:
+					solves = solves.get('the_count')
+				res['solves'] = solves
+				return res
+			else:
+				return {'error': 'unknown challenge'}
 	except Exception as e:
 		print(e)
-		return [{'username': 'nope', 'score': -999999}]
+		return {'error': str(e)}
 
-@app.route('/scores')
-def scores_route():
-	score_data = get_scores()
-	return render_template('scores.html',score_data=score_data)
+@app.route('/challenge/<int:challenge_id>',methods=['GET','POST'])
+def challenge_route(challenge_id):
+	if not is_logged_in():
+		return redirect(url_for('index_route'))
+	if not is_legit_problem(challenge_id):
+		abort(404)
+	if request.method == 'POST':
+		status = grade_flag(challenge_id,session.get('userid'),request.form.get('flag'))
+		print(repr(status))
+		if not status.get('status'):
+			flash(status.get('message'),'danger')
+		else:
+			flash('Great Success!','success')
+	user_solved = [x.get('challengeid') for x in get_user_solved(session.get('userid'))]
+	print(repr(user_solved))
+	solved_status = challenge_id in user_solved
+	print(repr(solved_status))
+	user_info = get_user_info(session.get('userid',0))
+	challenges = get_challenges()
+	challenge_info = get_challenges(challenge_id)
+	hl_path = get_hl_path(request.path)
+	return render_template('challenge.html',logged_in=is_logged_in(),user_info=user_info,challenges=challenges,challenge_info=challenge_info,
+							hl_path=hl_path,solved_status=solved_status)
 
 
+### defunct route ###
 @app.route('/problems', methods=['GET','POST'])
 def problems_route():
 	if not is_logged_in():
@@ -216,6 +251,7 @@ def problems_route():
 	print(repr(problem_data))
 	print(user_solved)
 	return render_template('problems.html',problem_data=problem_data,user_solved=user_solved,message=message)
+### end defunct route ###
 
 @app.route('/logout')
 def logout_route():
@@ -251,6 +287,23 @@ def update_user(form):
 			return {'status': False, 'message': 'Passwords did not match'}
 	return {'status': True, 'message': 'Profile updated'}
 
+def get_scores():
+	try:
+		cur = get_db().cursor()
+		cur.execute('SELECT username, score FROM users ORDER BY score DESC')
+		return cur.fetchall()
+	except Exception as e:
+		print(e)
+		return [{'username': 'nope', 'score': -999999}]
+
+@app.route('/scores')
+def scores_route():
+	score_data = get_scores()
+	user_info = get_user_info(session.get('userid',0))
+	challenges = get_challenges()
+	hl_path = get_hl_path(request.path)
+	return render_template('scores.html',logged_in=is_logged_in(),user_info=user_info,score_data=score_data, challenges=challenges,
+							hl_path=hl_path)
 
 @app.route('/profile',methods=['GET','POST'])
 def profile_route():
@@ -261,7 +314,9 @@ def profile_route():
 		else:
 			flash(status.get('message'), 'success')
 	user_info = get_user_info(session.get('userid',0))
-	return render_template('profile.html',logged_in=is_logged_in(),user_info=user_info)
+	challenges = get_challenges()
+	hl_path = get_hl_path(request.path)
+	return render_template('profile.html',logged_in=is_logged_in(),user_info=user_info,challenges=challenges,hl_path=hl_path)
 
 @app.route('/',methods=['GET','POST'])
 def index_route():
@@ -277,7 +332,9 @@ def index_route():
 		else:
 			flash('Logged In', 'success')
 	user_info = get_user_info(session.get('userid',0))
-	return render_template('index.html',logged_in=is_logged_in(),user_info=user_info)
+	challenges = get_challenges()
+	hl_path = get_hl_path(request.path)
+	return render_template('index.html',logged_in=is_logged_in(),user_info=user_info, challenges=challenges,hl_path=hl_path)
 
 ### defunct route ###
 @app.route('/login', methods=['GET','POST'])

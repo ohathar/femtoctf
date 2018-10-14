@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html>
+
+{% include 'header.html' %}
+
+<body>
+
+    <div class="wrapper">
+
+{% include 'sidebar.html' %}
+
+        <!-- Page Content Holder -->
+        <div id="content">
+
+{% include 'navbar.html' %}
+            
+            <h2>{{ challenge_info.get('points') }}pts - {{ challenge_info.get('name') }} <span class="small font-italic">{{ challenge_info.get('solves') }} solves</span></h2>
+            <p>{{ challenge_info.get('description')|safe }}</p>
+            {% if challenge_info.get('files') %}
+            	<h3>Associated Files:</h3>
+	            {% for file in challenge_info.get('files') %}
+	            <p><a class="download_file" href="/download/{{ file }}">{{ file }}</a></p>
+	            {% endfor %}
+	        {% endif %}
+
+<p>
+{% if not solved_status %}
+
+	<form class="form-inline" method="POST">
+	  <div class="form-group mx-sm-3 mb-2">
+	    <label for="flag" class="sr-only">flag</label>
+	    <input name="flag" type="text" class="form-control" id="flag" placeholder="runcode{legit_ish_flag_hereth}">
+	    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+	  </div>
+	  <button type="submit" class="btn btn-secondary mb-2">Submit Flag</button>
+	</form>
+
+{% else %}
+	You have already solutionized this challenge!
+{% endif %}
+</p>
+
+            <div class="line"></div>
+
+
+        </div>
+    </div>
+
+
+{% include 'footer.html' %}
+</body>
+
+</html>
