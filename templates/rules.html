@@ -15,18 +15,10 @@
 
 {% include 'navbar.html' %}
             
-            <h2>Current Scores</h2>
-<p>
-
-<div class="container">
-
-
-
-
-</div>
-
-</p>
-
+            <h2>Rules</h2>
+            {% for rule in site_rules %}
+            <p>{{ rule }}</p>
+            {% endfor %}
 
             <div class="line"></div>
 
