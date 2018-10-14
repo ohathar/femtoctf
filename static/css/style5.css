@@ -23,6 +23,9 @@ a, a:hover, a:focus {
     transition: all 0.3s;
 }
 
+.download_file {
+    text-decoration: underline;
+}
 .navbar-link {
     text-decoration: underline;
 }
@@ -84,7 +87,7 @@ a, a:hover, a:focus {
 
 #sidebar ul.components {
     padding: 20px 0;
-    border-bottom: 1px solid #47748b;
+    border-bottom: 1px solid #000;
 }
 
 #sidebar ul p {
@@ -144,7 +147,7 @@ ul.CTAs a {
 }
 
 a.download {
-    background: #fff;
+    background: #bee5eb;
     color: #000;
 }
 

@@ -1,19 +1,28 @@
         <!-- Sidebar Holder -->
         <nav id="sidebar">
             <div class="sidebar-header">
-                <h3>CTF</h3>
+                <h3><a href="/">CTF</a></h3>
             </div>
 
             <ul class="list-unstyled components">
-                <li class="active">
+                <li{% if hl_path == 'home' %} class="active"{% endif %}>
                     <a href="/">Home</a>
                 </li>
-                <li>
+                <li{% if hl_path == 'scores' %} class="active"{% endif %}>
+                    <a href="/scores">Scores</a>
+                </li>
+                <li{% if hl_path == 'rules' %} class="active"{% endif %}>
+                    <a href="/rules">Rules</a>
+                </li>
+                <li{% if hl_path == 'challenges' %} class="active"{% endif %}>
                     <a href="#pageSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Challenges</a>
                     <ul class="collapse list-unstyled" id="pageSubmenu">
+                        {% for challenge in challenges %}
                         <li>
-                            <a href="#">Page 1</a>
+                            <a href="/challenge/{{ challenge.get('id') }}">{{ challenge.get('name') }}</a>
                         </li>
+                        {% endfor %}
+                        <!--
                         <li>
                             <a href="#">Page 2</a>
                         </li>
@@ -23,14 +32,9 @@
                         <li>
                             <a href="#">Page 3</a>
                         </li>
+                        -->
 
                     </ul>
-                </li>
-                <li>
-                    <a href="/scores">Scores</a>
-                </li>
-                <li>
-                    <a href="/rules">Rules</a>
                 </li>
             </ul>
 
