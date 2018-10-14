@@ -1,0 +1,69 @@
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <div class="container-fluid">
+
+                    <button type="button" id="sidebarCollapse" class="navbar-btn">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <button class="btn btn-dark d-inline-block d-lg-none ml-auto" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <i class="fas fa-align-justify"></i>
+                    </button>
+
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="nav navbar-nav ml-auto">
+
+                            <li class="nav-item">
+                                {% if not logged_in %}
+                                <form method="POST">
+                                  <div class="form-row align-items-center">                                    
+                                    <div class="col-sm-3 my-1">
+                                    
+                                      <label class="sr-only" for="inlineFormInput">UserName</label>
+                                      <input name="username" type="text" class="form-control mb-2" id="inlineFormInput" placeholder="h4xX0r">
+                                    
+                                    </div>
+
+                                    <div class="col-sm-3 my-1">
+
+                                      <label for="inputPassword" class="sr-only">Password</label>
+                                      <input name="password" type="password" id="inputPassword" class="form-control mb-2" placeholder="Password" required>
+                                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+                                    </div>
+
+                                    <div class="col-sm-3 my-1">
+                                      <button type="submit" class="btn btn-secondary mb-2">Login/Register</button>
+                                    </div>
+                                  </div>
+                                </form>
+                                {% else %}
+
+                                    Score: {{ user_info.get('score') }}
+                                    <a class="navbar-link" href="/profile">{{ user_info.get('username') }}</a>
+                                    <a class="navbar-link" href="/logout">Logout</a>
+
+                                {% endif %}
+
+                                {% with messages = get_flashed_messages(with_categories=true) %}
+                                  {% if messages %}
+                                    {% for category, message in messages %}
+
+                                      <div class="alert alert-{{ category }} alert-dismissible" role="alert">
+                                      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                        {{ message|safe }}
+                                      </div>
+                                    {% endfor %}
+                                  {% endif %}
+                                {% endwith %}
+
+
+                            </li>
+
+                        </ul>
+
+
+
+                    </div>
+                </div>
+            </nav>
