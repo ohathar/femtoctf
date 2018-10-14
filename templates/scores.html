@@ -20,6 +20,27 @@
 
 <div class="container">
 
+<table class="table table-hover table-striped">
+  <thead>
+    <tr>
+      <th scope="col">Place</th>
+      <th scope="col">Hero</th>
+      <th scope="col">Score</th>
+      <th scope="col">Flags</th>
+    </tr>
+  </thead>
+  <tbody>
+
+{% for score in score_data %}
+
+    <tr>
+      <th scope="row">{{ loop.index }}</th>
+      <td>{{ score.get('username') }}</td>
+      <td>{{ score.get('score') }}</td>
+      <td>{{ score.get('solves') }}</td>
+    </tr>
+
+  {% endfor %}
 
 
 

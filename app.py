@@ -290,11 +290,14 @@ def update_user(form):
 def get_scores():
 	try:
 		cur = get_db().cursor()
-		cur.execute('SELECT username, score FROM users ORDER BY score DESC')
-		return cur.fetchall()
+		cur.execute('select userid, sum(points) as score, count(id) as solves,\
+			(select username from users where id = userid) AS username, \
+			occured from scoreboard group by userid order by score DESC, occured ASC')
+		res = cur.fetchall()
+		return res
 	except Exception as e:
 		print(e)
-		return [{'username': 'nope', 'score': -999999}]
+		return []
 
 @app.route('/scores')
 def scores_route():
