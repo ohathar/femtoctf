@@ -99,7 +99,6 @@ def get_user_solved(userid):
 		cur = get_db().cursor()
 		cur.execute('SELECT challengeid FROM scoreboard WHERE userid = ?', (userid,))
 		res = cur.fetchall()
-		print('get_user_solved out:', repr(res))
 		return res if res is not None else []
 	except Exception as e:
 		print(e)
@@ -205,6 +204,58 @@ def get_challenges(challenge_id=None):
 		print(e)
 		return {'error': str(e)}
 
+def get_user_info(userid):
+	cur = get_db().cursor()
+	cur.execute('SELECT username, email, score, admin FROM users WHERE id = ? LIMIT 1', (userid,))
+	res = cur.fetchone()
+	if res is None:
+		return res
+	res['solved'] = get_user_solved(userid)
+	return res
+
+def update_user(form):
+	email = form.get('email',None) if form.get('email',None) != '' else None
+	password1 = form.get('password1',None) if form.get('password1',None) != '' else None
+	password2 = form.get('password2',None) if form.get('password2',None) != '' else None
+	if email is not None:
+		cur = get_db().cursor()
+		cur.execute('UPDATE users SET email = ? WHERE id = ? LIMIT 1',(email.strip(),session.get('userid')))
+		cur.connection.commit()
+	if all([password1,password2]):
+		if password1 == password2:
+			password_hash = bcrypt.encrypt(password1.strip(), rounds=8)
+			cur = get_db().cursor()
+			cur.execute('UPDATE users SET password = ? WHERE id = ? LIMIT 1', (password_hash,session.get('userid')))
+			cur.connection.commit()
+		else:
+			return {'status': False, 'message': 'Passwords did not match'}
+	return {'status': True, 'message': 'Profile updated'}
+
+def get_scores():
+	try:
+		cur = get_db().cursor()
+		cur.execute('select userid, sum(points) as score, count(id) as solves,\
+			(select username from users where id = userid) AS username, \
+			occured from scoreboard group by userid order by score DESC, occured ASC')
+		res = cur.fetchall()
+		return res
+	except Exception as e:
+		print(e)
+		return []
+
+def get_site_rules():
+	cur = get_db().cursor()
+	cur.execute("SELECT setting_value AS site_rules FROM site_data WHERE setting_name = 'site_rules' LIMIT 1")
+	res = cur.fetchone()
+	rules = res.get('site_rules').split('\n')
+	return rules
+
+def get_site_data():
+	cur = get_db().cursor()
+	cur.execute("SELECT setting_value AS site_title FROM site_data WHERE setting_name = 'site_title' LIMIT 1")
+	res = cur.fetchone()
+	return res
+
 
 @app.route('/challenge/<int:challenge_id>',methods=['GET','POST'])
 def challenge_route(challenge_id):
@@ -214,7 +265,6 @@ def challenge_route(challenge_id):
 		abort(404)
 	if request.method == 'POST':
 		status = grade_flag(challenge_id,session.get('userid'),request.form.get('flag'))
-		print(repr(status))
 		if not status.get('status'):
 			flash(status.get('message'),'danger')
 		else:
@@ -248,8 +298,6 @@ def problems_route():
 			print(e)
 			message = 'uhhhhh....'
 	problem_data = get_challenges()
-	print(repr(problem_data))
-	print(user_solved)
 	return render_template('problems.html',problem_data=problem_data,user_solved=user_solved,message=message)
 ### end defunct route ###
 
@@ -257,47 +305,6 @@ def problems_route():
 def logout_route():
 	session.clear()
 	return redirect(url_for('index_route'))
-
-def get_user_info(userid):
-	cur = get_db().cursor()
-	cur.execute('SELECT username, email, score, admin FROM users WHERE id = ? LIMIT 1', (userid,))
-	res = cur.fetchone()
-	print(repr(res))
-	if res is None:
-		return res
-	res['solved'] = get_user_solved(userid)
-	return res
-
-def update_user(form):
-	email = form.get('email',None) if form.get('email',None) != '' else None
-	password1 = form.get('password1',None) if form.get('password1',None) != '' else None
-	password2 = form.get('password2',None) if form.get('password2',None) != '' else None
-	print(repr(email),repr(password1),repr(password2))
-	if email is not None:
-		cur = get_db().cursor()
-		cur.execute('UPDATE users SET email = ? WHERE id = ? LIMIT 1',(email.strip(),session.get('userid')))
-		cur.connection.commit()
-	if all([password1,password2]):
-		if password1 == password2:
-			password_hash = bcrypt.encrypt(password1.strip(), rounds=8)
-			cur = get_db().cursor()
-			cur.execute('UPDATE users SET password = ? WHERE id = ? LIMIT 1', (password_hash,session.get('userid')))
-			cur.connection.commit()
-		else:
-			return {'status': False, 'message': 'Passwords did not match'}
-	return {'status': True, 'message': 'Profile updated'}
-
-def get_scores():
-	try:
-		cur = get_db().cursor()
-		cur.execute('select userid, sum(points) as score, count(id) as solves,\
-			(select username from users where id = userid) AS username, \
-			occured from scoreboard group by userid order by score DESC, occured ASC')
-		res = cur.fetchall()
-		return res
-	except Exception as e:
-		print(e)
-		return []
 
 @app.route('/scores')
 def scores_route():
@@ -323,19 +330,6 @@ def profile_route():
 	site_data = get_site_data()
 	return render_template('profile.html',logged_in=is_logged_in(),user_info=user_info,challenges=challenges,hl_path=hl_path,site_data=site_data)
 
-def get_site_rules():
-	cur = get_db().cursor()
-	cur.execute("SELECT setting_value AS site_rules FROM site_data WHERE setting_name = 'site_rules' LIMIT 1")
-	res = cur.fetchone()
-	rules = res.get('site_rules').split('\n')
-	return rules
-
-def get_site_data():
-	cur = get_db().cursor()
-	cur.execute("SELECT setting_value AS site_title FROM site_data WHERE setting_name = 'site_title' LIMIT 1")
-	res = cur.fetchone()
-	return res
-
 @app.route('/rules')
 def rules_route():
 	user_info = get_user_info(session.get('userid',0))
@@ -343,7 +337,6 @@ def rules_route():
 	hl_path = get_hl_path(request.path)
 	site_data = get_site_data()
 	site_rules = get_site_rules()
-	print(repr(site_rules))
 	return render_template('rules.html',logged_in=is_logged_in(),user_info=user_info, challenges=challenges,hl_path=hl_path,
 							site_data=site_data,site_rules=site_rules)
 
@@ -351,7 +344,6 @@ def rules_route():
 def index_route():
 	if request.method == 'POST':
 		status = login(request.form.get('username','').strip(), request.form.get('password','').strip())
-		print("before register\n%s" % (status))
 		if not status:
 			status = register(request.form.get('username','').strip(), request.form.get('password','').strip())
 			if not status.get('status'):

@@ -2,6 +2,8 @@
 config.txt
 femtoctf.service
 nginx_config.conf
+# no db overwrite
+app.db
 # no sockets
 app.sock
 static/downloads/
