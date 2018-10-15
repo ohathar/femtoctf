@@ -205,7 +205,6 @@ def get_challenges(challenge_id=None):
 		print(e)
 		return {'error': str(e)}
 
-
 @app.route('/challenge/<int:challenge_id>',methods=['GET','POST'])
 def challenge_route(challenge_id):
 	if not is_logged_in():
